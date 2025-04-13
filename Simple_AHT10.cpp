@@ -24,7 +24,9 @@
 
 #include "Simple_AHT10.h"
 
-Simple_AHT10::Simple_AHT10() {}
+Simple_AHT10::Simple_AHT10() {
+    SetAddress(SIMPLE_AHT10_ADDR_GND);
+}
 
 Simple_AHT10::Simple_AHT10(uint8_t address, SensorType type) {
     SetAddress(address);
@@ -144,8 +146,8 @@ Simple_AHT10 &Simple_AHT10::SetCallbackFunction(AHTCallback cb) {
     return *this;
 }
 
-void Simple_AHT10::TriggerMeasurement(int32_t every) {
-    if (every >= 0) TriggerDelay = (uint32_t)abs(every);
+void Simple_AHT10::TriggerMeasurement(int32_t everyXms) {
+    if (everyXms >= 0) TriggerDelay = (uint32_t)abs(everyXms);
     currentState = TRIGGERED;
     lastActionTime = millis();
     uint8_t cmdBuf[2] = { AHT_MEASUREMENT_PARAM, AHT_NOP };
@@ -161,7 +163,8 @@ bool Simple_AHT10::IsBusy() {
 }
 
 void Simple_AHT10::MaybeAutoTrigger() {
-    if (TriggerDelay && (millis() - LastTriggerDelayTime >= TriggerDelay)) {
+    if (TriggerDelay && currentState == IDLE &&  (millis() - LastTriggerDelayTime >= TriggerDelay)) {
+        Serial.println("Triggered");
         TriggerMeasurement();
     }
 }

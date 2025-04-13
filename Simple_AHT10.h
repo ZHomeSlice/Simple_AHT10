@@ -80,7 +80,7 @@ public:
     uint8_t GetCalibrationBit(bool forceRead = AHT_FORCE_READ);
     uint8_t GetBusyBit(bool forceRead = AHT_FORCE_READ);
     Simple_AHT10 &SetCallbackFunction(AHTCallback cb);
-    void TriggerMeasurement(int32_t every = -1);
+    void TriggerMeasurement(int32_t everyXms = -1);
     void DisableAutoTrigger();
     bool IsBusy();
     void loop();
