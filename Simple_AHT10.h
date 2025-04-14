@@ -52,6 +52,7 @@
 #define AHT_FORCE_READ             true
 #define AHT_USE_CACHED_DATA        false
 #define AHT_ERROR_CODE             0xFF
+#define CtoF(CelsiusTemp) ((CelsiusTemp * 1.8f) + 32.0f) //CelsiusTemp to Fahrenheit math
 
 typedef void (*AHTCallback)(float temperature, float humidity);
 
