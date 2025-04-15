@@ -151,11 +151,21 @@ void Simple_AHT10::TriggerMeasurement(int32_t everyXms) {
     currentState = TRIGGERED;
     lastActionTime = millis();
     uint8_t cmdBuf[2] = { AHT_MEASUREMENT_PARAM, AHT_NOP };
-    WriteBytes(AHT_CMD_START_MEASURE, 2, cmdBuf);
+    if(!WriteBytes(AHT_CMD_START_MEASURE, 2, cmdBuf).WriteSucess()){
+        currentState = ERROR_DETECTED;
+    }
+
 }
 
-void Simple_AHT10::DisableAutoTrigger() {
+Simple_AHT10 &Simple_AHT10::DisableAutoTrigger() {
     TriggerDelay = 0;
+    currentState = IDLE;
+    return *this;
+}
+
+Simple_AHT10 &Simple_AHT10::SetTriggerDelay(int32_t everyXms) {
+    if (everyXms >= 0) TriggerDelay = (uint32_t)abs(everyXms);
+    return *this;
 }
 
 bool Simple_AHT10::IsBusy() {
@@ -171,17 +181,26 @@ void Simple_AHT10::MaybeAutoTrigger() {
 
 void Simple_AHT10::CheckMeasurementReady() {
     if (currentState == WAITING_FOR_DATA && (millis() - lastActionTime >= measurementDelayMs)) {
-        if (ReadBytes(0x00, 6, rawData).ReadSuccess()) {
-            float temp = ReadTemperature(AHT_USE_CACHED_DATA);
-            float hum  = ReadHumidity(AHT_USE_CACHED_DATA);
-            if (callback) callback(temp, hum);
-            LastTriggerDelayTime = millis();
+        if(ReadStatusByte() == AHT_ERROR_CODE){
+            currentState = ERROR_DETECTED
+        }
+            if (ReadBytes(0x00, 6, rawData).ReadSuccess()) {
+                float temp = ReadTemperature(AHT_USE_CACHED_DATA);
+                float hum  = ReadHumidity(AHT_USE_CACHED_DATA);
+                if (callback) callback(temp, hum);
+                LastTriggerDelayTime = millis();
+            }
         }
         currentState = IDLE;
     }
-}
 
 void Simple_AHT10::loop() {
+    if (currentState == ERROR_DETECTED) {
+        for (static unsigned long _ATimer; (unsigned long)(millis() - Timer) >= (2000); Timer = millis()){ // if an error is detected we will try again emediatly then wait for 2 seconds if error repeats
+            currentState = IDLE; 
+        }
+        return;
+    }
     if (currentState == TRIGGERED) {
         currentState = WAITING_FOR_DATA;
         lastActionTime = millis();
