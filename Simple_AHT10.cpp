@@ -167,6 +167,10 @@ Simple_AHT10 &Simple_AHT10::SetTriggerDelay(int32_t everyXms) {
     if (everyXms >= 0) TriggerDelay = (uint32_t)abs(everyXms);
     return *this;
 }
+Simple_AHT10 &Simple_AHT10::SetRetryDelay(uint32_t everyXms) {
+    RetryDelay = everyXms;
+    return *this;
+}
 
 bool Simple_AHT10::IsBusy() {
     return currentState != IDLE;
@@ -174,7 +178,6 @@ bool Simple_AHT10::IsBusy() {
 
 void Simple_AHT10::MaybeAutoTrigger() {
     if (TriggerDelay && currentState == IDLE &&  (millis() - LastTriggerDelayTime >= TriggerDelay)) {
-        Serial.println("Triggered");
         TriggerMeasurement();
     }
 }
@@ -182,13 +185,17 @@ void Simple_AHT10::MaybeAutoTrigger() {
 void Simple_AHT10::CheckMeasurementReady() {
     if (currentState == WAITING_FOR_DATA && (millis() - lastActionTime >= measurementDelayMs)) {
         if(ReadStatusByte() == AHT_ERROR_CODE){
-            currentState = ERROR_DETECTED
+            currentState = ERROR_DETECTED;
+            return;
         }
             if (ReadBytes(0x00, 6, rawData).ReadSuccess()) {
                 float temp = ReadTemperature(AHT_USE_CACHED_DATA);
                 float hum  = ReadHumidity(AHT_USE_CACHED_DATA);
                 if (callback) callback(temp, hum);
                 LastTriggerDelayTime = millis();
+            } else {
+                currentState = ERROR_DETECTED;
+                return;  
             }
         }
         currentState = IDLE;
@@ -196,7 +203,7 @@ void Simple_AHT10::CheckMeasurementReady() {
 
 void Simple_AHT10::loop() {
     if (currentState == ERROR_DETECTED) {
-        for (static unsigned long _ATimer; (unsigned long)(millis() - Timer) >= (2000); Timer = millis()){ // if an error is detected we will try again emediatly then wait for 2 seconds if error repeats
+        for (static unsigned long Timer; (unsigned long)(millis() - Timer) >= (RetryDelay); Timer = millis()){ // if an error is detected we will try again emediatly then wait for 2 seconds if error repeats
             currentState = IDLE; 
         }
         return;
@@ -206,7 +213,6 @@ void Simple_AHT10::loop() {
         lastActionTime = millis();
         return;
     }
-
     CheckMeasurementReady();
     MaybeAutoTrigger();
 }

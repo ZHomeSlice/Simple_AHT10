@@ -92,6 +92,7 @@ public:
     void TriggerMeasurement(int32_t everyXms = -1);
     Simple_AHT10 &DisableAutoTrigger();
     Simple_AHT10 &SetTriggerDelay(int32_t everyXms = -1);
+    Simple_AHT10 &SetRetryDelay(uint32_t everyXms = AHT_DELAY_RETRY);
     bool IsBusy();
     void loop();
 
@@ -102,6 +103,7 @@ private:
     uint16_t measurementDelayMs = AHT_DELAY_MEASURE_MS;
     AHTCallback callback = nullptr;
     uint32_t TriggerDelay = 1000;
+    uint32_t RetryDelay = AHT_DELAY_RETRY;
     uint32_t LastTriggerDelayTime = 0;
 
     void MaybeAutoTrigger();
