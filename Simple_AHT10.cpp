@@ -184,22 +184,18 @@ void Simple_AHT10::MaybeAutoTrigger() {
 
 void Simple_AHT10::CheckMeasurementReady() {
     if (currentState == WAITING_FOR_DATA && (millis() - lastActionTime >= measurementDelayMs)) {
-        if(ReadStatusByte() == AHT_ERROR_CODE){
+        if (ReadBytes(0x00, 6, rawData).ReadSuccess()) {
+            float temp = ReadTemperature(AHT_USE_CACHED_DATA);
+            float hum  = ReadHumidity(AHT_USE_CACHED_DATA);
+            if (callback) callback(temp, hum);
+            LastTriggerDelayTime = millis();
+        } else {
             currentState = ERROR_DETECTED;
-            return;
-        }
-            if (ReadBytes(0x00, 6, rawData).ReadSuccess()) {
-                float temp = ReadTemperature(AHT_USE_CACHED_DATA);
-                float hum  = ReadHumidity(AHT_USE_CACHED_DATA);
-                if (callback) callback(temp, hum);
-                LastTriggerDelayTime = millis();
-            } else {
-                currentState = ERROR_DETECTED;
-                return;  
-            }
+            return;  
         }
         currentState = IDLE;
     }
+}
 
 void Simple_AHT10::loop() {
     if (currentState == ERROR_DETECTED) {
